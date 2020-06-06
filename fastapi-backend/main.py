@@ -1,6 +1,6 @@
 import time
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from database.session import SessionLocal, engine
@@ -28,46 +28,53 @@ def get_db():
 
 
 @app.post("/stocks")
-async def add_stock(add_stock_request: schemas.StockAddRequest, db: Session = Depends(get_db)):
-    new_stock = crud.add_stock(db, add_stock_request.symbol)
-    new_stock_id = new_stock.id
-    service.fetch_daily_data(new_stock_id, db)
+async def add_stock(add_stock_request: schemas.AddStock, background_tasks: BackgroundTasks,
+                    db: Session = Depends(get_db)):
+    new_stock = crud.add_stock(add_stock_request.symbol, db)
+    background_tasks.add_task(service.fetch_daily_data, new_stock.id, db)
+    background_tasks.add_task(service.fetch_historical_data, new_stock.id, db)
     return {"status": "success"}
 
 
-@app.delete("/stocks/{id}")
+# @app.put("/stocks/{id}")
+# async def update_stock(id: int, background_tasks: BackgroundTasks,
+#                        db: Session = Depends(get_db)):
+#     current_stock = crud.get_stockå(id, db)å
+#     background_tasks.add_task(service.fetch_daily_data, current_stock.id, db)
+#     background_tasks.add_task(
+#         service.fetch_historical_data, current_stock.id, db)
+#     return {"status": "success"}
+
+
+@ app.delete("/stocks/{id}")
 def delete_stock(id: int, db: Session = Depends(get_db)):
-    clean_symbol = clean_string(symbol)
-    crud.delete_stock(db, clean_symbol)
+    """Removes historical data and stock summary."""
+    crud.delete_stock(id, db)
     return {"status": "success"}
 
 
-@app.get("/stocks/{id}/daily")
+@ app.get("/stocks/{id}")
 def get_stock_daily(id: int, db: Session = Depends(get_db)):
     """Get all stocks daily data."""
-    clean_symbol = clean_string(symbol)
-    crud.get_stock_daily(db, clean_symbol)
-    return {"status": "success"}
+    return crud.get_stock(id, db)
 
 
-@app.get("/stocks/{symbol}/historical")
-def get_stock_historical(symbol: str, db: Session = Depends(get_db)):
-    clean_symbol = clean_string(symbol)
-    crud.get_stock_historical(db, clean_symbol)
-    return {"status": "success"}
+@ app.get("/stocks/{id}/historical")
+def get_stock_historical(id: int, db: Session = Depends(get_db)):
+    return crud.get_historical_data(id, db)
 
 
-@app.get("/")
-def read_root(request: Request):
-    current_time = time.time()
+# @ app.get("/")
+# def read_root(request: Request):
+#     current_time = time.time()
 
-    return templates.TemplateResponse("index.html", {"request": request, "time": current_time})
+#     return templates.TemplateResponse("index.html", {"request": request, "time": current_time})
 
 
-@app.get("/time")
-def read_time():
-    current_time = time.time()
-    return {"time": current_time}
+# @ app.get("/time")
+# def read_time():
+#     current_time = time.time()
+#     return {"time": current_time}
 
 
 def clean_string(data: str):
