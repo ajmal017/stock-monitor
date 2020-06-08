@@ -1,9 +1,9 @@
 import time
 
+from database.session import SessionLocal, engine
 from fastapi import FastAPI, Request, Depends, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from database.session import SessionLocal, engine
 from sqlalchemy.orm import Session
 
 import crud
@@ -27,12 +27,38 @@ def get_db():
         db.close()
 
 
+@ app.get("/")
+def get_homepage(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@ app.get("/stocks")
+def get_all_stocks(db: Session = Depends(get_db)):
+    return crud.get_all_stocks(db)
+
+
+@ app.get("/stocks/{id}")
+def get_stock_daily(id: int, db: Session = Depends(get_db)):
+    """Get all stocks daily data."""
+    return crud.get_stock(id, db)
+
+
+@ app.get("/stocks/{id}/historical")
+def get_stock_historical(id: int, db: Session = Depends(get_db)):
+    return service.get_historical_data(id, db)
+
+
 @app.post("/stocks")
 async def add_stock(add_stock_request: schemas.AddStock, background_tasks: BackgroundTasks,
                     db: Session = Depends(get_db)):
-    new_stock = crud.add_stock(add_stock_request.symbol, db)
-    background_tasks.add_task(service.fetch_daily_data, new_stock.id, db)
+
+    new_stock = crud.add_stock(add_stock_request.symbol.strip().upper(), db)
+
+    service.fetch_daily_data(new_stock.id, db)
     background_tasks.add_task(service.fetch_historical_data, new_stock.id, db)
+
+    # background_tasks.add_task(service.fetch_daily_data, new_stock.id, db)
+    # background_tasks.add_task(service.fetch_historical_data, new_stock.id, db)
     return {"status": "success"}
 
 
@@ -53,29 +79,7 @@ def delete_stock(id: int, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 
-@ app.get("/stocks/{id}")
-def get_stock_daily(id: int, db: Session = Depends(get_db)):
-    """Get all stocks daily data."""
-    return crud.get_stock(id, db)
-
-
-@ app.get("/stocks/{id}/historical")
-def get_stock_historical(id: int, db: Session = Depends(get_db)):
-    return crud.get_historical_data(id, db)
-
-
-# @ app.get("/")
-# def read_root(request: Request):
-#     current_time = time.time()
-
-#     return templates.TemplateResponse("index.html", {"request": request, "time": current_time})
-
-
 # @ app.get("/time")
 # def read_time():
 #     current_time = time.time()
 #     return {"time": current_time}
-
-
-def clean_string(data: str):
-    return data.strip().upper()

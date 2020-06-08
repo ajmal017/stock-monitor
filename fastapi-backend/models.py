@@ -1,6 +1,6 @@
+from database.session import Base
 from sqlalchemy import Column, ForeignKey, Integer, String, Numeric, DateTime
 from sqlalchemy.orm import relationship
-from database.session import Base
 
 
 class Stock(Base):

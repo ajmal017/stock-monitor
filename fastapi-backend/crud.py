@@ -12,6 +12,10 @@ def get_stock_with_symbol(symbol: str, db: Session):
     return db.query(models.Stock).filter(models.Stock.symbol == symbol).first()
 
 
+def get_all_stocks(db: Session):
+    return db.query(models.Stock).all()
+
+
 def get_historical_data(id: int, db: Session):
     return db.query(models.HistoricalData).filter(models.HistoricalData.stock_id == id).all()
 
