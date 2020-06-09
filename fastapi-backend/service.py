@@ -24,6 +24,7 @@ def fetch_daily_data(id: int, db: Session):
         forward_eps=new_daily["forwardEps"],
         forward_pe=new_daily["forwardPE"],
         dividend_yield=new_daily["dividendYield"]
+
     )
     crud.update_stock(id, updated_stock, db)
 
@@ -52,23 +53,33 @@ class HistoricalDataType(Enum):
 
 class HistoricalData():
     def __init__(self, data: list, data_type: HistoricalDataType):
+        self.id = data_type.name
         self.data = data
-        self.data_type: data_type
+
+
+class PriceCoordinate():
+    def __init__(self, date: date, price: float):
+        self.x = date
+        self.y = price
+
+
+def format_date(date: date):
+    return date.strftime("%Y-%m-%d")
 
 
 def get_historical_data(id: int, db: Session):
     """format for nivo api. Returns a list of objects, historical time data of 50 moving"""
     data = crud.get_historical_data(id, db)
 
-    daily = [{data[i].date: data[i].closing_price}
+    daily = [PriceCoordinate(format_date(data[i].date), data[i].closing_price)
              for i in range(200, len(data))]
     ma50 = get_moving_average(data, 50, 200)
     ma200 = get_moving_average(data, 200, 200)
 
     return [
-        HistoricalData(daily, HistoricalDataType.DAILY),
+        HistoricalData(ma200, HistoricalDataType.MA200),
         HistoricalData(ma50, HistoricalDataType.MA50),
-        HistoricalData(ma200, HistoricalDataType.MA200)
+        HistoricalData(daily, HistoricalDataType.DAILY)
     ]
 
 
@@ -81,7 +92,7 @@ def get_moving_average(data: list, num_days: int, start_offset: int):
         total = 0
         for start in range(end-num_days+1, end):
             total += data[start].closing_price
-        moving_average.append({
-            data[end].date: total / num_days
-        })
+        moving_average.append(PriceCoordinate(
+            format_date(data[end].date), total / num_days)
+        )
     return moving_average

@@ -1,4 +1,5 @@
 import time
+import json
 
 from database.session import SessionLocal, engine
 from fastapi import FastAPI, Request, Depends, BackgroundTasks
@@ -57,19 +58,7 @@ async def add_stock(add_stock_request: schemas.AddStock, background_tasks: Backg
     service.fetch_daily_data(new_stock.id, db)
     background_tasks.add_task(service.fetch_historical_data, new_stock.id, db)
 
-    # background_tasks.add_task(service.fetch_daily_data, new_stock.id, db)
-    # background_tasks.add_task(service.fetch_historical_data, new_stock.id, db)
     return {"status": "success"}
-
-
-# @app.put("/stocks/{id}")
-# async def update_stock(id: int, background_tasks: BackgroundTasks,
-#                        db: Session = Depends(get_db)):
-#     current_stock = crud.get_stockå(id, db)å
-#     background_tasks.add_task(service.fetch_daily_data, current_stock.id, db)
-#     background_tasks.add_task(
-#         service.fetch_historical_data, current_stock.id, db)
-#     return {"status": "success"}
 
 
 @ app.delete("/stocks/{id}")
@@ -77,9 +66,3 @@ def delete_stock(id: int, db: Session = Depends(get_db)):
     """Removes historical data and stock summary."""
     crud.delete_stock(id, db)
     return {"status": "success"}
-
-
-# @ app.get("/time")
-# def read_time():
-#     current_time = time.time()
-#     return {"time": current_time}

@@ -15,7 +15,7 @@ class UpdateStock(BaseModel):
     ma200: float
     forward_eps: float
     forward_pe: float
-    dividend_yield: float
+    dividend_yield: float = None
 
 
 class AddHistoricalData(BaseModel):
