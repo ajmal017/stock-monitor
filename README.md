@@ -9,6 +9,6 @@ A simple stock monitor that displays key metrics for your personalized list, and
 ## Technologies Used
 - **FastAPI** for python web framework
 - **SQLite** for database
-- **React.js** for front-end design and **SemanticUI** for UI design
+- **React.js** for front-end design and **SemanticUI** for UI design (click [here](https://github.com/chiangvincent/stock-monitor-frontend) for frontend repo)
 - **yfinance** API for stock metrics and historical data
     
